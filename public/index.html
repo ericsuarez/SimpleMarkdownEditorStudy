@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Markdown Editor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-k6Q9eDBUZ+un+1/3kydnVuhdTj0rX5E2fqtqI9fKanEq6nnoD5fyTI+0jW+5qlehAL9Hegg9xi8Sf+/08sCJFw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        header {
+            background-color: #6200ea;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+        }
+        #searchInput {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            outline: none;
+            width: 50%;
+        }
+        #searchInput:focus {
+            border-color: #6200ea;
+            box-shadow: 0 0 10px rgba(98, 0, 234, 0.2);
+        }
+        #container {
+            display: flex;
+            flex-grow: 1;
+        }
+        
+        #editor, #output {
+            flex: 1;
+            margin: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        #editor {
+            resize: none;
+        }
+
+                /* Estilos para tablas Markdown */
+        #output table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        #output th, #output td {
+            border: 1px solid #ddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        #output th {
+            background-color: #6200ea;
+            color: white;
+        }
+
+        /* Clase para ocultar una fila */
+        .hidden {
+            background-color: #6200ea;  /* o cualquier color que oculte el texto */
+            color: #6200ea;  /* mismo color que el fondo */
+        }
+
+        #fullScreenBtn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #6200ea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        #fullScreenBtn:hover {
+            background-color: #4300a8;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        /* Clase para pantalla completa */
+        .fullscreen {
+            flex: 0 0 100%;
+            margin: 0;
+        }
+
+        /* Clase para ocultar el editor */
+        .hiddenEditor {
+            display: none;
+        }
+
+        
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1><i class="fas fa-code"></i> Modern Markdown Editor</h1>
+        <input type="text" id="searchInput" placeholder="Buscar..." oninput="filterTable()">
+    </header>
+    
+    <div id="container">
+        <textarea id="editor" placeholder="Type some markdown here..."></textarea>
+        <div id="output"></div>
+    </div>
+    <button id="fullScreenBtn" onclick="toggleFullscreen()">Fullscreen</button>
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
+    <script>
+
+document.addEventListener('DOMContentLoaded', (event) => {
+        const md = window.markdownit();
+        const editor = document.getElementById('editor');
+        const output = document.getElementById('output');
+        const searchInput = document.getElementById('searchInput');
+    
+        function renderMarkdown() {
+                const result = md.render(editor.value);
+                output.innerHTML = result;
+                const table = output.getElementsByTagName('table')[0];
+                if (table) {
+                    table.id = 'markdownTable';
+                    table.addEventListener('click', toggleRowVisibility);  // Agrega un listener para clics en la tabla
+                }
+                filterTable();  // Filtra la tabla después de renderizar el Markdown
+            }
+    
+    
+            if(localStorage.getItem('markdown')) {
+                editor.value = localStorage.getItem('markdown');
+                renderMarkdown();
+            }
+
+            if(localStorage.getItem('filter')) {
+                searchInput.value = localStorage.getItem('filter');
+                filterTable();  // También filtra la tabla aquí por si acaso
+            }
+    
+    
+        editor.addEventListener('input', () => {
+            localStorage.setItem('markdown', editor.value);
+            renderMarkdown();
+        });
+    });
+    </script>
+    <script type="text/javascript">
+        function filterTable() {
+            var input, filter, table, tr, td, i, j, txtValue;
+            input = document.getElementById("searchInput");
+            filter = input.value.toUpperCase();
+            localStorage.setItem('filter', input.value);  // Guardar el valor del filtro en localStorage
+            table = document.getElementById("markdownTable"); // Asegúrate de asignar el ID 'markdownTable' a tu tabla
+            tr = table.getElementsByTagName("tr");
+    
+            for (i = 1; i < tr.length; i++) { // Comienza en 1 para evitar el encabezado de la tabla
+                tr[i].style.display = "none";  
+                td = tr[i].getElementsByTagName("td");
+                for (j = 0; j < td.length; j++) {
+                    if (td[j]) {
+                        if (td[j].innerHTML.toUpperCase().indexOf(filter) > -1) {
+                            tr[i].style.display = "";
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        // Función para alternar la visibilidad de una fila
+        function toggleRowVisibility(event) {
+            const row = event.target.closest('tr');  // Encuentra la fila más cercana al elemento clicado
+            if (row && row.parentNode.nodeName === 'TBODY') {  // Verifica que la fila está dentro del cuerpo de la tabla y no en el encabezado
+                row.classList.toggle('hidden');  // Alterna la clase 'hidden'
+            }
+        }
+
+        function toggleFullscreen() {
+            const editor = document.getElementById('editor');
+            const output = document.getElementById('output');
+            const container = document.getElementById('container');
+
+            // Verificar si el editor está oculto
+            if (editor.classList.contains('hiddenEditor')) {
+                // Si está oculto, mostrar el editor y la vista dividida
+                editor.classList.remove('hiddenEditor');
+                output.classList.remove('fullscreen');
+                container.style.flexDirection = 'row';
+            } else {
+                // Si no está oculto, ocultar el editor y mostrar solo el renderizado en pantalla completa
+                editor.classList.add('hiddenEditor');
+                output.classList.add('fullscreen');
+                container.style.flexDirection = 'column';
+            }
+        }
+    </script>
+    </script>
+    
+    </body>
+    </html>
